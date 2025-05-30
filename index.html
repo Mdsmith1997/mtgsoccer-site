@@ -1,0 +1,215 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta property="og:title" content="Master The Game" />
+  <meta property="og:description" content="Elite soccer training for the Tri-City Area. Book your session now!" />
+  <meta property="og:image" content="https://i.imgur.com/pXA84GN.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://mtgsoccer.com" />
+  <meta property="og:type" content="website" />
+  <title>Master the Game</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <img class="logo" src="https://i.imgur.com/8tNuYmw.png" alt="Your Logo" />
+  <h1 class="headline">Are You Ready to <span>Master The Game?</span></h1>
+  <h2 class="subtitle">Providing Elite Soccer Training for the <span>Tri-City Area</span></h2>
+
+  <div class="container">
+    <div class="form-section">
+      <div class="signup-guide">
+        <h3>How to Sign Up</h3>
+        <ol>
+          <li data-step="1"><i class="fas fa-futbol"></i>Select a Training Type</li>
+          <li data-step="2"><i class="fas fa-users"></i>Choose a Session Type</li>
+          <li data-step="3"><i class="fas fa-credit-card"></i>Pick a Payment Option</li>
+          <li data-step="4"><i class="fas fa-user-edit"></i>Fill in Your Information and Select a Date</li>
+          <li data-step="5"><i class="fas fa-check-circle"></i>Click Book Now</li>
+        </ol>
+      </div>
+      <form id="bookingForm">
+        <h3 style="color: #00bcd4;">Sign Up Here</h3>
+        <div class="form-field">
+          <label>Training Type</label>
+          <div class="button-group">
+            <button type="button" onclick="selectOption(event, 'training', 'Outfield Player')">Outfield Player</button>
+            <button type="button" onclick="selectOption(event, 'training', 'Goalkeeper')">Goalkeeper</button>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Session Type</label>
+          <div class="button-group">
+            <button id="btn-oneonone" type="button" onclick="selectOption(event, 'session', '1-on-1 Session')">1-on-1 Session</button>
+            <button type="button" onclick="selectOption(event, 'session', 'Group Session')">Group Session</button>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Payment Option</label>
+          <div class="button-group">
+            <button type="button" onclick="selectOption(event, 'pay', 'Pay with Venmo')">Pay with Venmo</button>
+            <button type="button" onclick="selectOption(event, 'pay', 'Pay Cash at the Session')">Pay with Cash</button>
+          </div>
+        </div>
+        <input type="hidden" id="payOption" name="payOption" />
+        <input type="hidden" id="sessionType" name="sessionType" />
+        <input type="hidden" id="trainingOption" name="trainingOption" />
+        <div class="form-field">
+          <label for="name">Full Name</label>
+          <input id="name" name="name" placeholder="John Doe" required />
+        </div>
+        <div class="form-field">
+          <label for="age">Age</label>
+          <input id="age" name="age" placeholder="Enter age" required />
+        </div>
+        <div class="form-field">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" required />
+        </div>
+        <div class="form-field">
+          <label for="date">Available Dates</label>
+          <select id="date" name="date" required>
+            <option value="">Select a date</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="time">Available Times</label>
+          <select id="time" name="time" required>
+            <option value="">Select a time</option>
+          </select>
+        </div>
+        <div id="remainingSpots">
+          <p>Please select a date, time, training type, and session type to view available slots.</p>
+        </div>
+        <label style="margin-top: 15px; font-size: 14px;">Book Session</label>
+        <button id="submitBtn" type="button">Book Now</button>
+      </form>
+    </div>
+
+    <div class="coach-section-slider">
+      <div class="coach-bio-section">
+        <h2>Meet the Coaches</h2>
+        <div class="coach-bio-container">
+          <img id="coach-image" src="" alt="Coach" onerror="this.src='https://i.imgur.com/8tNuYmw.png'" />
+          <div class="coach-info">
+            <h3 id="coach-name"></h3>
+            <p id="coach-bio"></p>
+          </div>
+        </div>
+        <div class="nav-arrow nav-prev" aria-label="Previous coach">
+          <i class="fa fa-chevron-left"></i>
+        </div>
+        <div class="nav-arrow nav-next" aria-label="Next coach">
+          <i class="fa fa-chevron-right"></i>
+        </div>
+      </div>
+      <div class="price-list">
+        <h3>Session Prices</h3>
+        <ul>
+          <li><i class="fas fa-dollar-sign"></i>1-on-1 Session: $60</li>
+          <li><i class="fas fa-dollar-sign"></i>Group Session: $50</li>
+          <li><i class="fas fa-dollar-sign"></i>Goalkeeper: $30</li>
+        </ul>
+      </div>
+      <div class="schedule-visual">
+        <h3>Current Schedule</h3>
+        <div class="calendar-container">
+          <div class="calendar-header">June 2025</div>
+          <div class="calendar-body">
+            <p>Tuesdays: 1-on-1 Sessions</p>
+            <p>Thursdays: Group Sessions</p>
+            <p>Thursdays & Fridays: Goalkeeper</p>
+            <p>Location: Saginaw Soccer Complex</p>
+          </div>
+        </div>
+      </div>
+      <div class="follow-us">
+        <h2>Follow Us</h2>
+        <div class="social-icons">
+          <a href="https://www.facebook.com/people/Master-the-Game-MTG/61560819523382/" target="_blank" aria-label="Facebook">
+            <i class="fab fa-facebook"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="customAlertModal" style="display:none; width: 280px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border-radius: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 1000;">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('customAlertModal')">×</span>
+      <p id="customAlertMessage" style="margin-bottom:15px;font-size:16px;color:#00bcd4;"></p>
+      <button id="customAlertOkBtn" style="padding:6px 15px; background:#00bcd4; color:white; border-radius:3px; font-size: 14px; font-weight: bold; cursor: pointer;">Confirm</button>
+    </div>
+  </div>
+  <div id="customAlertOverlay" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.5); z-index: 10;"></div>
+  <div id="venmoConfirmationModal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('venmoConfirmationModal')">×</span>
+      <h3>Confirm Venmo Payment</h3>
+      <p>Enter your Venmo username:</p>
+      <input type="text" id="venmoUsername" placeholder="@yourusername" />
+      <br /><br />
+      <label><input type="checkbox" id="paymentConfirmed" /> I have sent the payment</label>
+      <br /><br />
+      <button id="venmoSubmitBtn" onclick="finalizeBooking()">Submit</button>
+    </div>
+  </div>
+  <div id="thankYouMessage" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('thankYouMessage')">×</span>
+      <p>Thank you for booking! We look forward to seeing you!</p>
+    </div>
+  </div>
+  <div id="errorModal" class="modal-overlay">
+    <div class="modal-content">
+      <p id="errorMessage" style="color: #fff; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span id="errorMessageText"></span>
+        <span class="close-btn" onclick="closeModal('errorModal')">×</span>
+      </p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
